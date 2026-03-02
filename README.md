@@ -5,7 +5,7 @@
 
 Group01/code: 完整代码+运行说明文档
 
-Group01/document：2025CV_G01_汇报总结.PPTX + 2025CV_G01_学号_姓名_大作业.docx
+Group01/document：2026CV_G01_汇报总结.PPTX + 2026CV_G01_学号_姓名_大作业.docx
 
 （word文档含章节目录，尽可能详尽覆盖ppt汇报的内容和代码说明的内容，鼓励有些新想法。ppt文档里包含组员分工和贡献说明。）
 
