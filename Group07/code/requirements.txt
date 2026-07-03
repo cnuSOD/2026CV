@@ -1,0 +1,8 @@
+opencv-python
+numpy
+pandas
+matplotlib
+seaborn
+torch
+torchvision
+l2cs @ git+https://github.com/edavalosanaya/L2CS-Net.git@main

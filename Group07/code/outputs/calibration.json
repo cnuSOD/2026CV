@@ -1,0 +1,172 @@
+{
+  "model": "l2cs",
+  "method": "poly2",
+  "input_features": [
+    "yaw_deg",
+    "pitch_deg"
+  ],
+  "width": 1280,
+  "height": 720,
+  "x_coeffs": [
+    180.70695459712968,
+    42.04166761698363,
+    35.49015305560372,
+    -0.12947342823901575,
+    -0.8826374970719044,
+    -0.4002148451596952
+  ],
+  "y_coeffs": [
+    874.9792064389217,
+    1.8212002799064324,
+    13.61179513517004,
+    -0.3060914788742069,
+    -0.774679415443744,
+    -0.4963414560735309
+  ],
+  "points": [
+    {
+      "point_index": 1,
+      "target_x": 102.0,
+      "target_y": 57.0,
+      "yaw_deg": 27.531937022268902,
+      "pitch_deg": -13.932691436635956,
+      "confidence": 0.9996978978315989,
+      "sample_count": 30
+    },
+    {
+      "point_index": 2,
+      "target_x": 461.0,
+      "target_y": 57.0,
+      "yaw_deg": 33.572815871416644,
+      "pitch_deg": -5.179410354465889,
+      "confidence": 0.9996677080790202,
+      "sample_count": 30
+    },
+    {
+      "point_index": 3,
+      "target_x": 819.0,
+      "target_y": 57.0,
+      "yaw_deg": 32.66529432822136,
+      "pitch_deg": 8.651883579994445,
+      "confidence": 0.9997249603271484,
+      "sample_count": 30
+    },
+    {
+      "point_index": 4,
+      "target_x": 1178.0,
+      "target_y": 57.0,
+      "yaw_deg": 28.214389602751503,
+      "pitch_deg": 22.269294765203085,
+      "confidence": 0.9995960593223572,
+      "sample_count": 30
+    },
+    {
+      "point_index": 5,
+      "target_x": 102.0,
+      "target_y": 259.0,
+      "yaw_deg": 22.43233308823858,
+      "pitch_deg": -15.610234561888925,
+      "confidence": 0.9994168698787689,
+      "sample_count": 30
+    },
+    {
+      "point_index": 6,
+      "target_x": 461.0,
+      "target_y": 259.0,
+      "yaw_deg": 31.157739528075588,
+      "pitch_deg": -5.130004963730444,
+      "confidence": 0.9993045091629028,
+      "sample_count": 30
+    },
+    {
+      "point_index": 7,
+      "target_x": 819.0,
+      "target_y": 259.0,
+      "yaw_deg": 29.37342688571698,
+      "pitch_deg": 5.513570315976182,
+      "confidence": 0.9995798110961914,
+      "sample_count": 30
+    },
+    {
+      "point_index": 8,
+      "target_x": 1178.0,
+      "target_y": 259.0,
+      "yaw_deg": 27.19545002953795,
+      "pitch_deg": 21.043571784049828,
+      "confidence": 0.9994560877482096,
+      "sample_count": 30
+    },
+    {
+      "point_index": 9,
+      "target_x": 102.0,
+      "target_y": 461.0,
+      "yaw_deg": 17.497190148729622,
+      "pitch_deg": -14.121923108251629,
+      "confidence": 0.9996990402539571,
+      "sample_count": 30
+    },
+    {
+      "point_index": 10,
+      "target_x": 461.0,
+      "target_y": 461.0,
+      "yaw_deg": 23.76392969335134,
+      "pitch_deg": -5.70142371233559,
+      "confidence": 0.9997202893098195,
+      "sample_count": 30
+    },
+    {
+      "point_index": 11,
+      "target_x": 819.0,
+      "target_y": 461.0,
+      "yaw_deg": 25.526594335726806,
+      "pitch_deg": 3.391833095127428,
+      "confidence": 0.9997313737869262,
+      "sample_count": 30
+    },
+    {
+      "point_index": 12,
+      "target_x": 1178.0,
+      "target_y": 461.0,
+      "yaw_deg": 24.596512677702968,
+      "pitch_deg": 21.54823084075119,
+      "confidence": 0.9997192283471426,
+      "sample_count": 30
+    },
+    {
+      "point_index": 13,
+      "target_x": 102.0,
+      "target_y": 663.0,
+      "yaw_deg": 13.76249977110534,
+      "pitch_deg": -12.482907799446233,
+      "confidence": 0.9997318625450134,
+      "sample_count": 30
+    },
+    {
+      "point_index": 14,
+      "target_x": 461.0,
+      "target_y": 663.0,
+      "yaw_deg": 13.473132261319796,
+      "pitch_deg": -3.914810292295941,
+      "confidence": 0.9997553348541259,
+      "sample_count": 30
+    },
+    {
+      "point_index": 15,
+      "target_x": 819.0,
+      "target_y": 663.0,
+      "yaw_deg": 15.023979504041652,
+      "pitch_deg": 7.445803582563913,
+      "confidence": 0.999750018119812,
+      "sample_count": 30
+    },
+    {
+      "point_index": 16,
+      "target_x": 1178.0,
+      "target_y": 663.0,
+      "yaw_deg": 17.695160620501504,
+      "pitch_deg": 20.9714358794956,
+      "confidence": 0.9997602025667827,
+      "sample_count": 30
+    }
+  ]
+}
