@@ -1,0 +1,220 @@
+import cv2
+import time
+import mediapipe as mp
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+VIDEO_SAVE_PATH = "long_10min.mp4"
+CSV_AU_PATH = "au_long_seq.csv"
+CSV_SEG_PATH = "seg_stat.csv"
+FIG_SAVE_PATH = "emotion_trend.png"
+RECORD_DURATION = 600
+SAMPLE_INTERVAL = 10
+SEG_WINDOW = 30
+PEAK_THRESHOLD_RATIO = 1.5
+
+mp_face_mesh = mp.solutions.face_mesh
+face_mesh = mp_face_mesh.FaceMesh(
+    static_image_mode=False,
+    max_num_faces=1,
+    refine_landmarks=True,
+    min_detection_confidence=0.5,
+    min_tracking_confidence=0.5
+)
+
+AU_INDEX = {
+    "AU4_brow_down": [27, 28],
+    "AU12_lip_corner_up": [61, 291],
+    "AU15_lip_corner_down": [61, 291],
+    "AU25_lip_part": [13, 14]
+}
+AU_NAMES = list(AU_INDEX.keys())
+
+def record_long_video(save_path, duration):
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        raise Exception("摄像头打开失败，请关闭占用摄像头软件、开启系统相机权限")
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(save_path, fourcc, fps, (width, height))
+
+    start_time = time.time()
+    print(f"开始录制，总时长 {duration/60} 分钟，按键盘Q可提前结束录制")
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+        out.write(frame)
+        cv2.imshow("视频录制窗口(Q退出)", frame)
+        if time.time() - start_time >= duration:
+            break
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    cap.release()
+    out.release()
+    cv2.destroyAllWindows()
+    print(f"视频保存完成：{save_path}")
+    return save_path
+
+def calc_AU_intensity(landmarks, img_w, img_h):
+    au_result = {}
+    for au_name, point_ids in AU_INDEX.items():
+        coords = []
+        for pid in point_ids:
+            lm = landmarks[pid]
+            x = lm.x * img_w
+            y = lm.y * img_h
+            coords.append(np.array([x, y]))
+        dist = np.linalg.norm(coords[0] - coords[1])
+        au_result[au_name] = dist
+    return au_result
+
+def extract_all_au_sequence(video_path):
+    cap = cv2.VideoCapture(video_path)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    frame_count = 0
+    record_list = []
+
+    print("正在提取人脸微表情时序特征...")
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+        frame_count += 1
+        if frame_count % SAMPLE_INTERVAL != 0:
+            continue
+        current_sec = frame_count / fps
+        rgb_img = cv2.cvtColor(frame, cv2.BGR2RGB)
+        detect_res = face_mesh.process(rgb_img)
+
+        if detect_res.multi_face_landmarks:
+            face_lm = detect_res.multi_face_landmarks[0].landmark
+            au_data = calc_AU_intensity(face_lm, w, h)
+            au_data["time_sec"] = current_sec
+            record_list.append(au_data)
+        else:
+            blank_data = {k: np.nan for k in AU_NAMES}
+            blank_data["time_sec"] = current_sec
+            record_list.append(blank_data)
+    cap.release()
+    df = pd.DataFrame(record_list)
+    df.to_csv(CSV_AU_PATH, index=False)
+    print(f"时序AU数据已保存至 {CSV_AU_PATH}，总采样条数：{len(df)}")
+    return df
+
+def long_time_statistic(df):
+    df_fill = df.interpolate(method="linear")
+    global_stats = {}
+    max_time = df_fill["time_sec"].max()
+
+    for au in AU_NAMES:
+        data_series = df_fill[au].dropna()
+        au_mean = data_series.mean()
+        au_std = data_series.std()
+        peak_mask = df_fill[au] > au_mean + PEAK_THRESHOLD_RATIO * au_std
+        peak_num = peak_mask.sum()
+        global_stats[f"{au}_avg"] = au_mean
+        global_stats[f"{au}_std"] = au_std
+        global_stats[f"{au}_peak_cnt"] = peak_num
+        global_stats[f"{au}_peak_per_min"] = peak_num / (max_time / 60)
+
+    seg_data_list = []
+    seg_start_arr = np.arange(0, max_time, SEG_WINDOW)
+    for seg_start in seg_start_arr:
+        seg_end = seg_start + SEG_WINDOW
+        seg_df = df_fill[(df_fill["time_sec"] >= seg_start) & (df_fill["time_sec"] < seg_end)]
+        seg_item = {"seg_start_sec": seg_start, "seg_end_sec": seg_end}
+        for au in AU_NAMES:
+            au_avg = global_stats[f"{au}_avg"]
+            au_std = global_stats[f"{au}_std"]
+            seg_item[f"{au}_seg_mean"] = seg_df[au].mean()
+            seg_item[f"{au}_seg_peak"] = (seg_df[au] > au_avg + PEAK_THRESHOLD_RATIO * au_std).sum()
+        seg_data_list.append(seg_item)
+    seg_df_out = pd.DataFrame(seg_data_list)
+    seg_df_out.to_csv(CSV_SEG_PATH, index=False)
+    print(f"分段统计数据保存至 {CSV_SEG_PATH}")
+    return global_stats, seg_df_out
+
+def judge_long_emotion(global_stats):
+    happy_peak = global_stats["AU12_lip_corner_up_peak_cnt"]
+    neg_peak = global_stats["AU4_brow_down_peak_cnt"] + global_stats["AU15_lip_corner_down_peak_cnt"]
+    total_peaks = happy_peak + neg_peak
+
+    if total_peaks < 5:
+        emotion_label = "长期情绪平静，微表情活动极少"
+        ratio_info = {"积极微表情占比": 0.0, "消极微表情占比": 0.0, "情绪波动等级": "低"}
+        return emotion_label, ratio_info
+
+    happy_ratio = happy_peak / total_peaks
+    neg_ratio = neg_peak / total_peaks
+
+    if happy_ratio > 0.7:
+        emotion_label = "长期积极愉悦，心态放松"
+        level = "情绪稳定正向"
+    elif neg_ratio > 0.7:
+        emotion_label = "长期压抑烦躁，存在持续消极情绪"
+        level = "情绪持续低落"
+    elif abs(happy_ratio - neg_ratio) < 0.2:
+        emotion_label = "情绪频繁起伏波动，存在焦虑倾向"
+        level = "波动剧烈"
+    else:
+        emotion_label = "中性平稳，正负情绪交替出现"
+        level = "轻微波动"
+
+    ratio_info = {
+        "积极微表情占比": round(happy_ratio, 3),
+        "消极微表情占比": round(neg_ratio, 3),
+        "情绪波动等级": level
+    }
+    return emotion_label, ratio_info
+
+def draw_trend_chart():
+    df_au = pd.read_csv(CSV_AU_PATH)
+    df_seg = pd.read_csv(CSV_SEG_PATH)
+    plt.rcParams["font.sans-serif"] = ["SimHei"]
+    plt.rcParams["axes.unicode_minus"] = False
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 9))
+    time_min = df_au["time_sec"] / 60
+    ax1.plot(time_min, df_au["AU12_lip_corner_up"], c="#2da02d", label="AU12 微笑积极", linewidth=1.2)
+    ax1.plot(time_min, df_au["AU4_brow_down"], c="#d62728", label="AU4 皱眉消极", linewidth=1.2)
+    ax1.set_xlabel("时长（分钟）")
+    ax1.set_ylabel("AU动作强度")
+    ax1.set_title("10分钟人脸微表情AU时序变化曲线")
+    ax1.legend()
+    ax1.grid(alpha=0.3)
+
+    seg_x = df_seg["seg_start_sec"] / 60
+    seg_happy_cnt = df_seg["AU12_lip_corner_up_seg_peak"]
+    ax2.bar(seg_x, seg_happy_cnt, width=0.4, color="#2da02d", label="分段微笑微表情次数")
+    ax2.set_xlabel("分段起始（分钟）")
+    ax2.set_ylabel("微表情触发次数")
+    ax2.set_title("30秒分段微表情统计频次")
+    ax2.legend()
+    ax2.grid(alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(FIG_SAVE_PATH, dpi=150)
+    plt.show()
+    print(f"时序分析图表已保存：{FIG_SAVE_PATH}")
+
+if __name__ == "__main__":
+    video_file = record_long_video(VIDEO_SAVE_PATH, RECORD_DURATION)
+    au_dataframe = extract_all_au_sequence(video_file)
+    global_stat, seg_stat = long_time_statistic(au_dataframe)
+    emotion_result, ratio_detail = judge_long_emotion(global_stat)
+
+    print("\n==================== 10分钟长时序微表情情绪分析报告 ====================")
+    print(f"综合长期情绪判定：{emotion_result}")
+    print(f"情绪分布详情：{ratio_detail}")
+    print("\n全局微表情统计汇总：")
+    for key, val in global_stat.items():
+        print(f"{key} : {round(val, 3)}")
+    print("=====================================================================\n")
+
+    draw_trend_chart()
